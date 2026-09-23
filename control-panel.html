@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Subathon Timer Control</title>
+<style>
+  :root {
+    --bg: #15171c;
+    --panel: #1c1f26;
+    --panel-border: #2a2e38;
+    --text: #e8e9ed;
+    --text-dim: #8b8f9c;
+    --mono: 'SF Mono', 'JetBrains Mono', Consolas, monospace;
+    --sans: -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --accent-green: #4ade80;
+    --accent-yellow: #facc15;
+    --accent-red: #f87171;
+    --accent-money: #60a5fa;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 60px;
+  }
+
+  main { width: 100%; max-width: 440px; }
+
+  h1 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin: 0 0 20px;
+  }
+
+  section {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .conn-row { margin-bottom: 10px; }
+  .conn-row:last-child { margin-bottom: 0; }
+  .conn-row label {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 4px;
+  }
+  input[type="text"], input[type="password"], input[type="number"] {
+    width: 100%;
+    background: #0f1115;
+    border: 1px solid var(--panel-border);
+    border-radius: 8px;
+    padding: 9px 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+  input:focus { outline: 1px solid var(--accent-green); outline-offset: -1px; }
+
+  .conn-status {
+    font-size: 12px;
+    margin-top: 10px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); }
+  .dot.ok { background: var(--accent-green); }
+  .dot.bad { background: var(--accent-red); }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    text-align: center;
+    padding: 8px 0 20px;
+  }
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat-value.timer { color: var(--accent-green); transition: color 0.4s ease; }
+  .stat-value.money { color: var(--accent-money); }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 6px;
+  }
+  .paused-badge {
+    display: block;
+    text-align: center;
+    margin: -8px 0 12px;
+    font-size: 12px;
+    color: var(--accent-yellow);
+  }
+
+  .btn-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  button {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: 8px;
+    border: 1px solid var(--panel-border);
+    background: #232732;
+    color: var(--text);
+    padding: 12px 8px;
+    cursor: pointer;
+  }
+  button:hover { background: #2b303c; }
+  button:active { transform: scale(0.97); }
+  button.subtract { color: var(--accent-red); }
+  button.add { color: var(--accent-green); }
+
+  .row { display: flex; gap: 8px; }
+  .row input { flex: 1; }
+
+  .field-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+
+  .pause-btn { width: 100%; padding: 12px; font-weight: 600; }
+  .pause-btn.is-paused { color: var(--accent-yellow); border-color: var(--accent-yellow); }
+
+  .msg { font-size: 12px; margin-top: 10px; min-height: 14px; }
+  .msg.error { color: var(--accent-red); }
+  .msg.success { color: var(--accent-green); }
+
+  section h2 { font-size: 13px; color: var(--text-dim); margin: 0 0 14px; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Subathon Timer Control</h1>
+
+  <section id="conn-section">
+    <h2>Connection</h2>
+    <div class="conn-row">
+      <label for="token">Auth token</label>
+      <input type="password" id="token" placeholder="ask Noah for this" />
+    </div>
+    <div class="conn-status">
+      <span class="dot" id="conn-dot"></span>
+      <span id="conn-text">Not connected</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="stats-row">
+      <div>
+        <div class="stat-value timer" id="timer-display">--:--</div>
+        <div class="stat-label">Time remaining</div>
+      </div>
+      <div>
+        <div class="stat-value money" id="money-display">$0</div>
+        <div class="stat-label">Raised</div>
+      </div>
+    </div>
+    <div class="paused-badge" id="paused-badge" style="display:none">PAUSED</div>
+  </section>
+
+  <section>
+    <h2>Log a donation</h2>
+    <div class="field-label">Adds time using the current $/minute rate and adds to the total raised.</div>
+    <div class="row">
+      <input type="number" id="donation-amount" placeholder="dollar amount" value="5" />
+      <button id="donation-btn">Log it</button>
+    </div>
+    <div class="msg" id="donation-msg"></div>
+  </section>
+
+  <section>
+    <h2>Adjust time (no $ attached)</h2>
+    <div class="btn-grid">
+      <button class="subtract" data-delta="-300">-5m</button>
+      <button class="subtract" data-delta="-60">-1m</button>
+      <button class="subtract" data-delta="-30">-30s</button>
+      <button class="add" data-delta="30">+30s</button>
+      <button class="add" data-delta="60">+1m</button>
+      <button class="add" data-delta="300">+5m</button>
+    </div>
+    <div class="row">
+      <input type="number" id="custom-seconds" placeholder="custom seconds (+/-)" />
+      <button id="custom-add-btn">Add</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Correct the clock</h2>
+    <div class="field-label">Force the timer to an exact value - use this if it's drifted.</div>
+    <div class="row">
+      <input type="text" id="set-value" placeholder="dd:hh:mm:ss or seconds" />
+      <button id="set-btn">Set</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Correct the amount raised</h2>
+    <div class="field-label">Force the total to an exact value - doesn't touch the clock. Use "Log a donation" instead if a correction should also add time.</div>
+    <div class="row">
+      <input type="number" id="raised-value" placeholder="exact dollar total" />
+      <button id="raised-btn">Set</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>$/minute rate</h2>
+    <div class="field-label">Currently: <span id="rate-display">--</span></div>
+    <div class="row">
+      <input type="number" id="rate-value" placeholder="new rate" step="0.01" />
+      <button id="rate-btn">Update</button>
+    </div>
+  </section>
+
+  <section>
+    <button class="pause-btn" id="pause-btn">Pause</button>
+  </section>
+</main>
+
+<script>
+  // Baked in - not a secret, just the address of the backend. Safe to be
+  // public even if this page is hosted somewhere public like GitHub Pages.
+  const BASE_URL = 'https://kearoltdjyrsxipvzezz.supabase.co/functions/v1/timer-api';
+
+  const tokenInput = document.getElementById('token');
+  const connDot = document.getElementById('conn-dot');
+  const connText = document.getElementById('conn-text');
+  const timerDisplay = document.getElementById('timer-display');
+  const moneyDisplay = document.getElementById('money-display');
+  const pausedBadge = document.getElementById('paused-badge');
+  const pauseBtn = document.getElementById('pause-btn');
+  const rateDisplay = document.getElementById('rate-display');
+
+  // Saved locally in THIS browser only - never sent anywhere but the
+  // truth service itself. Each person using this page enters it once.
+  tokenInput.value = localStorage.getItem('subathon_token') || '';
+  tokenInput.addEventListener('change', () => localStorage.setItem('subathon_token', tokenInput.value.trim()));
+
+  let lastKnownPaused = false;
+  let lastKnownRemaining = 0;
+  let lastFetchMillis = Date.now();
+
+  function formatTime(totalSeconds) {
+    const d = Math.floor(totalSeconds / 86400);
+    const h = Math.floor((totalSeconds % 86400) / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    if (d > 0) return `${d}:${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  function formatMoney(n) {
+    return '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+
+  function parseTimeInput(raw) {
+    raw = raw.trim();
+    if (!raw) return null;
+    if (raw.includes(':')) {
+      const parts = raw.split(':').map((p) => parseInt(p, 10));
+      if (parts.some(isNaN)) return null;
+      if (parts.length === 4) return parts[0] * 86400 + parts[1] * 3600 + parts[2] * 60 + parts[3];
+      if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      if (parts.length === 2) return parts[0] * 60 + parts[1];
+      return null;
+    }
+    const n = parseInt(raw, 10);
+    return isNaN(n) ? null : n;
+  }
+
+  function setAccentColor(remaining) {
+    let color = 'var(--accent-green)';
+    if (remaining <= 60) color = 'var(--accent-red)';
+    else if (remaining <= 300) color = 'var(--accent-yellow)';
+    timerDisplay.style.color = color;
+  }
+
+  async function callApi(path, body) {
+    const token = tokenInput.value.trim();
+    // Token travels in the body now, not a custom header - Supabase's
+    // platform CORS preflight has a fixed allow-list that doesn't include
+    // custom headers, and there's no way to extend it from our side.
+    const outgoingBody = body === undefined ? undefined : { ...body, ...(token ? { token } : {}) };
+    const res = await fetch(BASE_URL + path, {
+      method: body === undefined ? 'GET' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: outgoingBody === undefined ? undefined : JSON.stringify(outgoingBody),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  }
+
+  async function refreshStatus() {
+    try {
+      const data = await callApi('/state');
+      lastKnownRemaining = data.remainingSeconds;
+      lastFetchMillis = Date.now();
+      moneyDisplay.textContent = formatMoney(data.amountRaised);
+      rateDisplay.textContent = `$${data.dollarsPerMinute}/min`;
+      lastKnownPaused = !!data.paused;
+      pausedBadge.style.display = lastKnownPaused ? 'block' : 'none';
+      pauseBtn.textContent = lastKnownPaused ? 'Resume' : 'Pause';
+      pauseBtn.classList.toggle('is-paused', lastKnownPaused);
+      connDot.className = 'dot ok';
+      connText.textContent = 'Connected';
+      tickDisplay();
+    } catch (e) {
+      connDot.className = 'dot bad';
+      connText.textContent = e.message || 'Connection failed';
+    }
+  }
+
+  // Runs every second, purely locally - no network call. Interpolates from
+  // whatever refreshStatus() last actually fetched, the same trick the mod
+  // uses, so the number on screen moves every second instead of only when
+  // a fetch happens to land.
+  function tickDisplay() {
+    const remaining = lastKnownPaused
+      ? lastKnownRemaining
+      : Math.max(0, lastKnownRemaining - Math.floor((Date.now() - lastFetchMillis) / 1000));
+    timerDisplay.textContent = formatTime(remaining);
+    setAccentColor(remaining);
+  }
+
+  document.getElementById('donation-btn').addEventListener('click', async () => {
+    const amount = parseFloat(document.getElementById('donation-amount').value);
+    const msg = document.getElementById('donation-msg');
+    if (isNaN(amount)) return;
+    try {
+      const data = await callApi('/donate', { amount });
+      msg.className = 'msg success';
+      msg.textContent = `Logged - total now ${formatMoney(data.amountRaised)}`;
+      refreshStatus();
+    } catch (e) {
+      msg.className = 'msg error';
+      msg.textContent = e.message;
+    }
+  });
+
+  document.querySelectorAll('.btn-grid button[data-delta]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      try {
+        await callApi('/adjust', { seconds: parseInt(btn.dataset.delta, 10) });
+        refreshStatus();
+      } catch (e) {
+        connText.textContent = e.message;
+      }
+    });
+  });
+
+  document.getElementById('custom-add-btn').addEventListener('click', async () => {
+    const input = document.getElementById('custom-seconds');
+    const val = parseInt(input.value, 10);
+    if (isNaN(val)) return;
+    try {
+      await callApi('/adjust', { seconds: val });
+      input.value = '';
+      refreshStatus();
+    } catch (e) {
+      connText.textContent = e.message;
+    }
+  });
+
+  document.getElementById('set-btn').addEventListener('click', async () => {
+    const input = document.getElementById('set-value');
+    const seconds = parseTimeInput(input.value);
+    if (seconds === null) return;
+    try {
+      await callApi('/correct', { seconds });
+      input.value = '';
+      refreshStatus();
+    } catch (e) {
+      connText.textContent = e.message;
+    }
+  });
+
+  document.getElementById('raised-btn').addEventListener('click', async () => {
+    const input = document.getElementById('raised-value');
+    const amount = parseFloat(input.value);
+    if (isNaN(amount) || amount < 0) return;
+    try {
+      await callApi('/correct-raised', { amount });
+      input.value = '';
+      refreshStatus();
+    } catch (e) {
+      connText.textContent = e.message;
+    }
+  });
+
+  document.getElementById('rate-btn').addEventListener('click', async () => {
+    const input = document.getElementById('rate-value');
+    const rate = parseFloat(input.value);
+    if (isNaN(rate) || rate <= 0) return;
+    try {
+      await callApi('/rate', { dollarsPerMinute: rate });
+      input.value = '';
+      refreshStatus();
+    } catch (e) {
+      connText.textContent = e.message;
+    }
+  });
+
+  pauseBtn.addEventListener('click', async () => {
+    try {
+      await callApi('/pause', { paused: !lastKnownPaused });
+      refreshStatus();
+    } catch (e) {
+      connText.textContent = e.message;
+    }
+  });
+
+  refreshStatus();
+  setInterval(refreshStatus, 5000);
+  setInterval(tickDisplay, 1000);
+</script>
+</body>
+</html>
