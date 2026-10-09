@@ -8,6 +8,7 @@
   :root {
     --bg: #15171c;
     --panel: #1c1f26;
+    --panel-raised: #20242e;
     --panel-border: #2a2e38;
     --text: #e8e9ed;
     --text-dim: #8b8f9c;
@@ -29,34 +30,144 @@
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    padding: 24px 16px 60px;
+    padding: 20px 16px 60px;
   }
 
   main { width: 100%; max-width: 440px; }
 
-  h1 {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-dim);
-    margin: 0 0 20px;
+  /* ---- top bar: brand + connection status + token, kept compact ---- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
   }
+  .topbar h1 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  .conn-status {
+    font-size: 12px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); flex-shrink: 0; }
+  .dot.ok { background: var(--accent-green); }
+  .dot.bad { background: var(--accent-red); }
 
-  section {
+  .token-row { margin-bottom: 18px; }
+
+  /* ---- shared card ---- */
+  .card {
     background: var(--panel);
     border: 1px solid var(--panel-border);
     border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 16px;
+    padding: 18px;
+    margin-bottom: 12px;
   }
+  .card h2 { font-size: 13px; color: var(--text-dim); margin: 0 0 12px; font-weight: 600; }
 
-  .conn-row { margin-bottom: 10px; }
-  .conn-row:last-child { margin-bottom: 0; }
-  .conn-row label {
-    font-size: 12px;
+  /* Functional wayfinding between clusters of cards used at different
+     cadences (constantly vs. set-once-and-forget) - not decoration. */
+  .group-label {
+    font-size: 11px;
     color: var(--text-dim);
-    display: block;
+    font-weight: 600;
+    margin: 24px 2px 8px;
+  }
+  .group-label:first-of-type { margin-top: 6px; }
+
+  /* ---- hero stats ---- */
+  .hero {
+    background: var(--panel-raised);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 22px 18px 18px;
     margin-bottom: 4px;
   }
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    text-align: center;
+  }
+  .stat-value {
+    font-family: var(--mono);
+    font-size: 38px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .stat-value.timer { color: var(--accent-green); transition: color 0.4s ease; }
+  .stat-value.money { color: var(--accent-money); }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 7px;
+  }
+  .paused-badge {
+    display: block;
+    text-align: center;
+    margin-top: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-yellow);
+  }
+
+  /* ---- subsections within a combined card (Corrections, Sponsor & matching) ---- */
+  .subsection { }
+  .subsection + .subsection {
+    border-top: 1px solid var(--panel-border);
+    margin-top: 16px;
+    padding-top: 16px;
+  }
+  .subsection h3 {
+    font-size: 13px;
+    color: var(--text);
+    margin: 0 0 6px;
+    font-weight: 600;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 10px 0 12px;
+  }
+  .toggle-row span { font-size: 13px; }
+  .switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute;
+    inset: 0;
+    background: #2a2e38;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .switch .slider::before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: var(--text-dim);
+    border-radius: 50%;
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+  .switch input:checked + .slider { background: #1d3a2a; }
+  .switch input:checked + .slider::before {
+    transform: translateX(18px);
+    background: var(--accent-green);
+  }
+
+  label { font-size: 12px; color: var(--text-dim); display: block; margin-bottom: 4px; }
   input[type="text"], input[type="password"], input[type="number"] {
     width: 100%;
     background: #0f1115;
@@ -68,46 +179,6 @@
     font-size: 14px;
   }
   input:focus { outline: 1px solid var(--accent-green); outline-offset: -1px; }
-
-  .conn-status {
-    font-size: 12px;
-    margin-top: 10px;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); }
-  .dot.ok { background: var(--accent-green); }
-  .dot.bad { background: var(--accent-red); }
-
-  .stats-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    text-align: center;
-    padding: 8px 0 20px;
-  }
-  .stat-value {
-    font-family: var(--mono);
-    font-size: 34px;
-    font-weight: 700;
-    line-height: 1;
-  }
-  .stat-value.timer { color: var(--accent-green); transition: color 0.4s ease; }
-  .stat-value.money { color: var(--accent-money); }
-  .stat-label {
-    font-size: 11px;
-    color: var(--text-dim);
-    margin-top: 6px;
-  }
-  .paused-badge {
-    display: block;
-    text-align: center;
-    margin: -8px 0 12px;
-    font-size: 12px;
-    color: var(--accent-yellow);
-  }
 
   .btn-grid {
     display: grid;
@@ -136,33 +207,36 @@
 
   .field-label { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
 
-  .pause-btn { width: 100%; padding: 12px; font-weight: 600; }
+  .pause-btn { width: 100%; padding: 13px; font-weight: 600; }
   .pause-btn.is-paused { color: var(--accent-yellow); border-color: var(--accent-yellow); }
 
   .msg { font-size: 12px; margin-top: 10px; min-height: 14px; }
   .msg.error { color: var(--accent-red); }
   .msg.success { color: var(--accent-green); }
 
-  section h2 { font-size: 13px; color: var(--text-dim); margin: 0 0 14px; font-weight: 600; }
+  /* ---- danger zone (Reset Everything) ---- */
+  .danger-card { border-color: rgba(248, 113, 113, 0.35); }
+  .danger-btn {
+    width: 100%; padding: 13px; font-weight: 600;
+    color: var(--accent-red); border-color: var(--accent-red);
+  }
+  .danger-btn:hover { background: rgba(248, 113, 113, 0.1); }
 </style>
 </head>
 <body>
 <main>
-  <h1>Subathon Timer Control</h1>
-
-  <section id="conn-section">
-    <h2>Connection</h2>
-    <div class="conn-row">
-      <label for="token">Auth token</label>
-      <input type="password" id="token" placeholder="ask Noah for this" />
-    </div>
+  <div class="topbar">
+    <h1>Subathon Control</h1>
     <div class="conn-status">
       <span class="dot" id="conn-dot"></span>
       <span id="conn-text">Not connected</span>
     </div>
-  </section>
+  </div>
+  <div class="token-row">
+    <input type="password" id="token" placeholder="auth token" />
+  </div>
 
-  <section>
+  <div class="hero">
     <div class="stats-row">
       <div>
         <div class="stat-value timer" id="timer-display">--:--</div>
@@ -174,9 +248,11 @@
       </div>
     </div>
     <div class="paused-badge" id="paused-badge" style="display:none">PAUSED</div>
-  </section>
+  </div>
 
-  <section>
+  <div class="group-label">Live actions</div>
+
+  <div class="card">
     <h2>Log a donation</h2>
     <div class="field-label">Adds time using the current $/minute rate and adds to the total raised.</div>
     <div class="row">
@@ -184,9 +260,9 @@
       <button id="donation-btn">Log it</button>
     </div>
     <div class="msg" id="donation-msg"></div>
-  </section>
+  </div>
 
-  <section>
+  <div class="card">
     <h2>Adjust time (no $ attached)</h2>
     <div class="btn-grid">
       <button class="subtract" data-delta="-300">-5m</button>
@@ -200,38 +276,92 @@
       <input type="number" id="custom-seconds" placeholder="custom seconds (+/-)" />
       <button id="custom-add-btn">Add</button>
     </div>
-  </section>
+  </div>
 
-  <section>
-    <h2>Correct the clock</h2>
-    <div class="field-label">Force the timer to an exact value - use this if it's drifted.</div>
-    <div class="row">
-      <input type="text" id="set-value" placeholder="dd:hh:mm:ss or seconds" />
-      <button id="set-btn">Set</button>
-    </div>
-  </section>
-
-  <section>
-    <h2>Correct the amount raised</h2>
-    <div class="field-label">Force the total to an exact value - doesn't touch the clock. Use "Log a donation" instead if a correction should also add time.</div>
-    <div class="row">
-      <input type="number" id="raised-value" placeholder="exact dollar total" />
-      <button id="raised-btn">Set</button>
-    </div>
-  </section>
-
-  <section>
-    <h2>$/minute rate</h2>
-    <div class="field-label">Currently: <span id="rate-display">--</span></div>
-    <div class="row">
-      <input type="number" id="rate-value" placeholder="new rate" step="0.01" />
-      <button id="rate-btn">Update</button>
-    </div>
-  </section>
-
-  <section>
+  <div class="card">
     <button class="pause-btn" id="pause-btn">Pause</button>
-  </section>
+  </div>
+
+  <div class="group-label">Corrections</div>
+
+  <div class="card">
+    <div class="subsection">
+      <h3>Correct the clock</h3>
+      <div class="field-label">Force the timer to an exact value - use this if it's drifted.</div>
+      <div class="row">
+        <input type="text" id="set-value" placeholder="dd:hh:mm:ss or seconds" />
+        <button id="set-btn">Set</button>
+      </div>
+    </div>
+    <div class="subsection">
+      <h3>Correct the amount raised</h3>
+      <div class="field-label">Force the total to an exact value - doesn't touch the clock. Use "Log a donation" instead if a correction should also add time.</div>
+      <div class="row">
+        <input type="number" id="raised-value" placeholder="exact dollar total" />
+        <button id="raised-btn">Set</button>
+      </div>
+    </div>
+    <div class="subsection">
+      <h3>$/minute rate</h3>
+      <div class="field-label">Currently: <span id="rate-display">--</span></div>
+      <div class="row">
+        <input type="number" id="rate-value" placeholder="new rate" step="0.01" />
+        <button id="rate-btn">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="group-label">Sponsor &amp; matching</div>
+
+  <div class="card">
+    <div class="subsection">
+      <h3>Sponsor announcement</h3>
+      <div class="field-label">When on, the boss bar rotates between the normal text and this message. When off (or blank), the bar just shows the normal text.</div>
+      <div class="toggle-row">
+        <span>Rotate announcement on boss bar</span>
+        <label class="switch">
+          <input type="checkbox" id="announcement-enabled" />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="row">
+        <input type="text" id="announcement-text" placeholder="e.g. Bisect Hosting is matching donations!" maxlength="100" />
+        <button id="announcement-btn">Save</button>
+      </div>
+      <div class="msg" id="announcement-msg"></div>
+    </div>
+    <div class="subsection">
+      <h3>Donation match</h3>
+      <div class="field-label">Pledge a sponsor is matching the next $X in donations. Counts down automatically as donations come in and disappears on its own at $0 - no need to turn it off manually.</div>
+      <div class="conn-status" style="margin: 10px 0;">
+        <span class="dot" id="match-dot"></span>
+        <span id="match-status">No active match</span>
+      </div>
+      <div class="row" style="margin-bottom: 8px;">
+        <input type="text" id="match-template" placeholder="e.g. BisectHosting is matching the next {amount} in donations!" maxlength="100" />
+      </div>
+      <div class="field-label">{amount} is replaced live with whatever's left to match.</div>
+      <div class="row" style="margin-top: 8px;">
+        <input type="number" id="match-amount" placeholder="starting match amount ($)" />
+        <button id="match-start-btn">Start</button>
+      </div>
+      <button id="match-cancel-btn" style="width: 100%; margin-top: 8px;">Cancel match</button>
+      <div class="msg" id="match-msg"></div>
+    </div>
+  </div>
+
+  <div class="group-label">Danger zone</div>
+
+  <div class="card danger-card">
+    <h2>Reset everything</h2>
+    <div class="field-label">Wipes the clock, total raised, any active match pledge, and turns the announcement off. Use before the real event starts to clear out test data, not casually once donations are real - this can't be undone.</div>
+    <div class="row">
+      <input type="text" id="reset-time" placeholder="start time dd:hh:mm:ss or seconds" />
+      <input type="number" id="reset-amount" placeholder="starting $ total" value="0" />
+    </div>
+    <button class="danger-btn" id="reset-btn" style="margin-top: 8px;">Reset everything</button>
+    <div class="msg" id="reset-msg"></div>
+  </div>
 </main>
 
 <script>
@@ -247,6 +377,11 @@
   const pausedBadge = document.getElementById('paused-badge');
   const pauseBtn = document.getElementById('pause-btn');
   const rateDisplay = document.getElementById('rate-display');
+  const announcementEnabled = document.getElementById('announcement-enabled');
+  const announcementTextInput = document.getElementById('announcement-text');
+  const matchTemplateInput = document.getElementById('match-template');
+  const matchDot = document.getElementById('match-dot');
+  const matchStatus = document.getElementById('match-status');
 
   // Saved locally in THIS browser only - never sent anywhere but the
   // truth service itself. Each person using this page enters it once.
@@ -320,6 +455,26 @@
       pausedBadge.style.display = lastKnownPaused ? 'block' : 'none';
       pauseBtn.textContent = lastKnownPaused ? 'Resume' : 'Pause';
       pauseBtn.classList.toggle('is-paused', lastKnownPaused);
+      // Only sync these fields in from the server when the operator isn't
+      // actively typing/toggling them - otherwise a refresh mid-edit would
+      // stomp on whatever they were in the middle of entering.
+      if (document.activeElement !== announcementTextInput) {
+        announcementTextInput.value = data.announcementText || '';
+      }
+      if (document.activeElement !== announcementEnabled) {
+        announcementEnabled.checked = !!data.announcementEnabled;
+      }
+      if (document.activeElement !== matchTemplateInput) {
+        matchTemplateInput.value = data.matchTemplate || '';
+      }
+      const matchRemaining = Number(data.matchRemaining) || 0;
+      if (matchRemaining > 0) {
+        matchDot.className = 'dot ok';
+        matchStatus.textContent = `Matching the next ${formatMoney(matchRemaining)}`;
+      } else {
+        matchDot.className = 'dot';
+        matchStatus.textContent = 'No active match';
+      }
       connDot.className = 'dot ok';
       connText.textContent = 'Connected';
       tickDisplay();
@@ -403,6 +558,76 @@
       refreshStatus();
     } catch (e) {
       connText.textContent = e.message;
+    }
+  });
+
+  document.getElementById('announcement-btn').addEventListener('click', async () => {
+    const msg = document.getElementById('announcement-msg');
+    const enabled = announcementEnabled.checked;
+    const text = announcementTextInput.value.trim();
+    try {
+      const data = await callApi('/announcement', { enabled, text });
+      msg.className = 'msg success';
+      msg.textContent = data.announcementEnabled
+        ? `Saved - rotating in: "${data.announcementText}"`
+        : 'Saved - announcement is off';
+      refreshStatus();
+    } catch (e) {
+      msg.className = 'msg error';
+      msg.textContent = e.message;
+    }
+  });
+
+  document.getElementById('match-start-btn').addEventListener('click', async () => {
+    const msg = document.getElementById('match-msg');
+    const amount = parseFloat(document.getElementById('match-amount').value);
+    const template = matchTemplateInput.value.trim();
+    if (isNaN(amount) || amount < 0) return;
+    try {
+      const data = await callApi('/match/start', { amount, template });
+      msg.className = 'msg success';
+      msg.textContent = `Match started - ${formatMoney(data.matchRemaining)} remaining`;
+      document.getElementById('match-amount').value = '';
+      refreshStatus();
+    } catch (e) {
+      msg.className = 'msg error';
+      msg.textContent = e.message;
+    }
+  });
+
+  document.getElementById('match-cancel-btn').addEventListener('click', async () => {
+    const msg = document.getElementById('match-msg');
+    try {
+      await callApi('/match/cancel', {});
+      msg.className = 'msg success';
+      msg.textContent = 'Match cancelled';
+      refreshStatus();
+    } catch (e) {
+      msg.className = 'msg error';
+      msg.textContent = e.message;
+    }
+  });
+
+  document.getElementById('reset-btn').addEventListener('click', async () => {
+    const msg = document.getElementById('reset-msg');
+    const timeRaw = document.getElementById('reset-time').value.trim();
+    const seconds = parseTimeInput(timeRaw);
+    const amount = parseFloat(document.getElementById('reset-amount').value);
+    if (seconds === null || seconds < 0 || isNaN(amount) || amount < 0) {
+      msg.className = 'msg error';
+      msg.textContent = 'Enter a valid start time (dd:hh:mm:ss or seconds) and $ total first.';
+      return;
+    }
+    const typed = prompt(`This wipes the clock, total raised, match pledge, and announcement. Type RESET to confirm starting over at ${timeRaw} / ${formatMoney(amount)}.`);
+    if (typed !== 'RESET') return;
+    try {
+      await callApi('/reset', { seconds, amount });
+      msg.className = 'msg success';
+      msg.textContent = `Reset to ${timeRaw} / ${formatMoney(amount)}`;
+      refreshStatus();
+    } catch (e) {
+      msg.className = 'msg error';
+      msg.textContent = e.message;
     }
   });
 
