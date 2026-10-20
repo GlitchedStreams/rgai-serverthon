@@ -654,7 +654,13 @@
   });
 
   refreshStatus();
-  setInterval(refreshStatus, 5000);
+  // Every poll is a billable Supabase Edge Function invocation, so don't
+  // spend them on a tab nobody is looking at: poll every 15s only while
+  // the tab is visible, and catch up immediately when it comes back.
+  // (Every button press already calls refreshStatus() itself, so actions
+  // still show up instantly.)
+  setInterval(() => { if (!document.hidden) refreshStatus(); }, 15000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStatus(); });
   setInterval(tickDisplay, 1000);
 </script>
 </body>
