@@ -221,6 +221,60 @@
     color: var(--accent-red); border-color: var(--accent-red);
   }
   .danger-btn:hover { background: rgba(248, 113, 113, 0.1); }
+
+  /* ---- tabs: Controls / Activity ---- */
+  [hidden] { display: none !important; }
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin: 14px 0 4px;
+  }
+  .tab-btn {
+    padding: 10px 8px;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--text-dim);
+    background: transparent;
+  }
+  .tab-btn.active {
+    color: var(--text);
+    background: var(--panel-raised);
+    border-color: var(--accent-green);
+  }
+
+  /* ---- activity feed ---- */
+  .feed-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 18px 2px 8px;
+    font-size: 11px;
+    color: var(--text-dim);
+    font-weight: 600;
+  }
+  .feed-head button { padding: 5px 10px; font-size: 12px; }
+  .feed { list-style: none; margin: 0; padding: 0; }
+  .feed li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-left: 3px solid var(--text-dim);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .feed li.donation { border-left-color: var(--accent-money); }
+  .feed li.warn { border-left-color: var(--accent-red); }
+  .feed li.clock { border-left-color: var(--accent-green); }
+  .feed li.muted { opacity: 0.55; }
+  .feed .ev-title { font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+  .feed .ev-sub { font-size: 11px; color: var(--text-dim); margin-top: 3px; font-family: var(--mono); }
+  .feed .ev-amount { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--accent-money); white-space: nowrap; align-self: center; }
+  .feed .ev-time { font-size: 11px; color: var(--text-dim); white-space: nowrap; text-align: right; }
+  .feed-empty { font-size: 13px; color: var(--text-dim); text-align: center; padding: 24px 0; }
 </style>
 </head>
 <body>
@@ -250,6 +304,12 @@
     <div class="paused-badge" id="paused-badge" style="display:none">PAUSED</div>
   </div>
 
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-btn-controls" data-tab="controls">Controls</button>
+    <button class="tab-btn" id="tab-btn-activity" data-tab="activity">Donations</button>
+  </div>
+
+  <div id="tab-controls">
   <div class="group-label">Live actions</div>
 
   <div class="card">
@@ -361,6 +421,16 @@
     </div>
     <button class="danger-btn" id="reset-btn" style="margin-top: 8px;">Reset everything</button>
     <div class="msg" id="reset-msg"></div>
+  </div>
+  </div><!-- /tab-controls -->
+
+  <div id="tab-activity" hidden>
+    <div class="feed-head">
+      <span id="feed-count">Donations</span>
+      <button id="feed-refresh">Refresh</button>
+    </div>
+    <ul class="feed" id="feed"></ul>
+    <div class="msg" id="feed-msg"></div>
   </div>
 </main>
 
@@ -478,6 +548,7 @@
       connDot.className = 'dot ok';
       connText.textContent = 'Connected';
       tickDisplay();
+      if (activeTab === 'activity') loadEvents();
     } catch (e) {
       connDot.className = 'dot bad';
       connText.textContent = e.message || 'Connection failed';
@@ -652,6 +723,72 @@
       connText.textContent = e.message;
     }
   });
+
+  // ---- Activity tab ----
+  let activeTab = 'controls';
+  const feedEl = document.getElementById('feed');
+  const feedMsg = document.getElementById('feed-msg');
+  const feedCount = document.getElementById('feed-count');
+
+  function setTab(name) {
+    activeTab = name;
+    document.getElementById('tab-controls').hidden = name !== 'controls';
+    document.getElementById('tab-activity').hidden = name !== 'activity';
+    document.getElementById('tab-btn-controls').classList.toggle('active', name === 'controls');
+    document.getElementById('tab-btn-activity').classList.toggle('active', name === 'activity');
+    if (name === 'activity') loadEvents();
+  }
+  document.querySelectorAll('.tab-btn').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+  document.getElementById('feed-refresh').addEventListener('click', loadEvents);
+
+  // Donor names come from outside, so they only ever go on the page with
+  // textContent, never as HTML.
+  async function loadEvents() {
+    try {
+      const data = await callApi('/donations', { limit: 100 });
+      const donations = data.donations || [];
+      feedEl.textContent = '';
+      feedMsg.textContent = '';
+      const sum = donations.reduce((t, d) => t + d.amount, 0);
+      feedCount.textContent = donations.length
+        ? `${donations.length} donation${donations.length === 1 ? '' : 's'} \u00b7 $${sum.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+        : 'Donations';
+      if (!donations.length) {
+        const empty = document.createElement('div');
+        empty.className = 'feed-empty';
+        empty.textContent = 'No donations logged yet.';
+        feedEl.appendChild(empty);
+        return;
+      }
+      for (const d of donations) {
+        const li = document.createElement('li');
+        li.className = 'donation';
+
+        const left = document.createElement('div');
+        const name = document.createElement('div');
+        name.className = 'ev-title';
+        name.textContent = d.donorName || (d.source === 'manual' ? 'Entered by hand' : 'Anonymous');
+        left.appendChild(name);
+        const sub = document.createElement('div');
+        sub.className = 'ev-sub';
+        const when = new Date(d.createdAt);
+        sub.textContent = when.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit' })
+          + (d.totalAfter != null ? ` \u00b7 total ${formatMoney(d.totalAfter)}` : '');
+        left.appendChild(sub);
+
+        const amt = document.createElement('div');
+        amt.className = 'ev-amount';
+        amt.textContent = '$' + Number(d.amount).toLocaleString('en-US', { maximumFractionDigits: 2 });
+
+        li.appendChild(left);
+        li.appendChild(amt);
+        feedEl.appendChild(li);
+      }
+    } catch (e) {
+      feedMsg.className = 'msg error';
+      feedMsg.textContent = e.message;
+    }
+  }
 
   refreshStatus();
   // Every poll is a billable Supabase Edge Function invocation, so don't
